@@ -16,7 +16,7 @@
 #include <string>
 #include <string_view>
 
-#include "gpu_profile.h"         // Profile (used in select_backend's signature)
+#include "gpu_info.h"            // Profile (used in select_backend's signature)
 #include "gpu_routing_tables.h"  // fnv1a, kNoModelArch, kLlmModelArch, kArchModelBackend, arch_model_backend
 
 namespace gpu_ep {

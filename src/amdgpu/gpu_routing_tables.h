@@ -16,7 +16,7 @@
 #include <cstdint>
 #include <string_view>
 
-#include "gpu_profile.h"  // Profile
+#include "gpu_info.h"  // Profile
 
 namespace gpu_ep {
 
