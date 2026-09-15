@@ -16,7 +16,7 @@
 #include <string>
 #include <string_view>
 
-#include "gpu_info.h"            // Profile (used in select_backend's signature)
+#include "gpu_profile.h"         // Profile (used in select_backend's signature)
 #include "gpu_routing_tables.h"  // fnv1a, kNoModelArch, kLlmModelArch, kArchModelBackend, arch_model_backend
 
 namespace gpu_ep {
@@ -59,8 +59,9 @@ inline bool is_webnn(const std::optional<std::string>& model_fw) {
 // or Optimized) is honored/dispatched as-is. In Auto mode, in priority order:
 //   1. WebNN caller                   -> DirectML (browser/WebNN compatibility carve-out, all ASICs)
 //   2. kArchModelBackend (arch prefix + model_arch) override, if any row matches
-//   3. HIP-enabled gfx1151 + present model_arch -> Hip
-//      (OGA gen/LLM hint; any non-empty value, including future families. Not a kLlmModelArch scan.)
+//   3. HIP-enabled gfx115x + present model_arch -> Hip
+//      (Strix gfx1150, Halo gfx1151, Krackan gfx1152, GPT3/Krackan2e gfx1153, and GPT SKUs
+//      that share 1150/1152. OGA gen/LLM hint; any non-empty value. Not a kLlmModelArch scan.)
 //   4. gfx11 and newer                -> MIGraphX (includes Medusa gfx117x)
 //   5. everything below gfx11 (gfx9/gfx10) -> DirectML
 inline Profile select_backend(std::string_view gfx, std::uint64_t arch_model_hash, bool is_webnn,
@@ -76,9 +77,9 @@ inline Profile select_backend(std::string_view gfx, std::uint64_t arch_model_has
         }
     }
 #ifdef USE_HIP
-    // 3. Strix Halo (gfx1151): a present model_arch is an OGA gen/LLM session hint → HIP.
-    //    gfx1150 (Strix) keeps the gfx11 default (MIGraphX). Do not match prefix "gfx115".
-    if (starts_with(gfx, "gfx1151") && arch_model_hash != kNoModelArch) {
+    // 3. gfx115x (Strix / Halo / Krackan / Gorgon Point): a present model_arch is an OGA
+    //    gen/LLM session hint → HIP. Prefix gfx115 does not match Medusa gfx117.
+    if (starts_with(gfx, "gfx115") && arch_model_hash != kNoModelArch) {
         return Profile::Hip;
     }
 #endif

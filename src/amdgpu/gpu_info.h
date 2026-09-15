@@ -5,19 +5,11 @@
 
 #include <filesystem>
 #include "common/plugin_ep_utils.h"
+#include "gpu_profile.h"  // Profile
 
 namespace fs = std::filesystem;
 
 namespace gpu_ep {
-
-enum class Profile {
-    Auto,
-    Eager,
-    Optimized,
-    MIGraphX,
-    DirectX,
-    Hip
-};
 
 struct ProviderInfo {
     Profile profile{Profile::Auto};
