@@ -613,6 +613,8 @@ ExecutionProvider::ExecutionProvider(const ProviderFactory& factory, std::string
     context_file_path_ = info.context_file_path;
     context_node_name_prefix_ = info.context_node_name_prefix;
     hip_graph_enable_ = info.hip_graph_enable;
+    coresident_programs_ = info.coresident_programs;
+    max_resident_programs_ = info.max_resident_programs;
     max_dynamic_batch_ = info.max_dynamic_batch;
     compile_batches_ = info.compile_batches;
     precompile_at_load_ = info.precompile_at_load;
