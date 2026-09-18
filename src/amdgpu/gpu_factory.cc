@@ -149,6 +149,27 @@ ProviderFactory::ProviderFactory(const ApiPtrs& api_ptrs, const OrtApiBase* ort_
     custom_op_backends_.push_back(dml_ep_factory_);
 #endif
 
+#ifdef _WIN32
+    // Share one VRAM copy of identical weight literals across programs.  Measured
+    // ~45% less device memory (2499 -> 1292 MB on DeepSeek-1L, 2642 -> 1450 MB on
+    // Llama-3.2-1B, gfx1201) with prefill and decode latency unchanged and generated
+    // token IDs identical to baseline.
+    //
+    // This line MUST stay above the LoadDynamicLibrary below, and it cannot be moved
+    // into the migraphx backend.  MIGraphX reads the variable with std::getenv from
+    // src/env.cpp, which lives in migraphx.dll -- a static import of migraphx_c.dll,
+    // itself a static import of migraphx-backend.dll.  Every static import is resolved
+    // before any code in migraphx-backend.dll runs, so by the time that dll's own
+    // CreateEpFactories executes, migraphx.dll's CRT has already seeded its environment
+    // copy and no later write can reach it.  All three dlls build with a static CRT
+    // (/MT), so each holds a private copy and _putenv_s cannot cross between them
+    // either.  Setting it here, before the backend is loaded at all, is the only point
+    // at which the value is in the process environment block in time.
+    //
+    // Requires a MIGraphX that implements the flag; older ones ignore it.
+    ::SetEnvironmentVariableA("MIGRAPHX_SHARE_LITERALS", "1");
+#endif
+
     THROW_IF_ERROR(LoadDynamicLibrary(migraphxBackend, &mgx_backend_));
     THROW_IF_ERROR(GetSymbolFromLibrary(mgx_backend_,
         "ReleaseEpFactory", reinterpret_cast<void**>(&mgx_release_ep_factory_)));
