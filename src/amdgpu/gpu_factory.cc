@@ -149,6 +149,21 @@ ProviderFactory::ProviderFactory(const ApiPtrs& api_ptrs, const OrtApiBase* ort_
     custom_op_backends_.push_back(dml_ep_factory_);
 #endif
 
+    // MIGraphX keeps its INT4 M=1 GEMV fusion off by default; turn it on for this EP.
+    //
+    // This must be set HERE, before the backend is loaded, and not from inside
+    // migraphx-backend.dll. MIGraphX reads the variable with std::getenv from src/env.cpp, which
+    // builds into migraphx.dll -- and migraphx.dll is reached through a chain of static imports
+    // from migraphx-backend.dll, so its CRT has already seeded its own copy of the environment
+    // before any code in that dll runs. With a static CRT nothing written afterwards can reach
+    // it. amdgpu-ep.dll loads the backend dynamically, so code above this line runs before
+    // migraphx.dll exists in the process at all.
+    //
+    // Note this is process-global and unconditional: enabled() treats any present value as on,
+    // so MIGRAPHX_ENABLE_INT4_GEMV=0 in the environment will NOT switch it back off.
+#ifdef _WIN32
+    ::SetEnvironmentVariableA("MIGRAPHX_ENABLE_INT4_GEMV", "1");
+#endif
     THROW_IF_ERROR(LoadDynamicLibrary(migraphxBackend, &mgx_backend_));
     THROW_IF_ERROR(GetSymbolFromLibrary(mgx_backend_,
         "ReleaseEpFactory", reinterpret_cast<void**>(&mgx_release_ep_factory_)));
